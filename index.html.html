@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>繽紛萌寵進化大冒險 - 28強傳奇</title>
+    <!-- 修正 CDN 連結網址 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'ZCOOL KuaiLe', sans-serif; background: #fefce8; overflow-x: hidden; }
+        .monster-bounce { animation: bounce 2.5s infinite ease-in-out; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) scale(1, 1); }
+            50% { transform: translateY(-12px) scale(1.03, 0.97); }
+        }
+        .btn-active:active { transform: scale(0.95) translateY(10px); box-shadow: none !important; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        const NAMES = ["鄭程元", "黃天福", "陳佑麟", "徐睦桓", "廖康宇", "王又恩", "曾喜澤", "張劭宇", "王習聿", "黃守睿", "林成駿", "陳品齊", "苑世為", "廖崇聿", "李昀貞", "王岱扉", "梁庭榛", "陳詩穎", "黃歆媛", "盧怡安", "魏若樺", "林可芯", "周芫亘", "墜書悅", "秦若瑜", "王育安", "黃品瑜", "陳侑承"];
+
+        const getTraits = (name) => {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = ((hash << 5) - hash) + name.charCodeAt(i);
+                hash |= 0;
+            }
+            const s = Math.abs(hash);
+            
+            // 隨機高對比色池 (主色, 腹部/對比色, 斑點色, 肢體色)
+            const vibrantColors = [
+                { main: '#FF6B6B', belly: '#4ECDC4', spot: '#FFE66D', limb: '#292F36' }, // 紅/青/黃
+                { main: '#A78BFA', belly: '#FDE047', spot: '#22D3EE', limb: '#5B21B6' }, // 紫/黃/藍
+                { main: '#FB923C', belly: '#60A5FA', spot: '#A7F3D0', limb: '#7C2D12' }, // 橘/藍/綠
+                { main: '#F472B6', belly: '#34D399', spot: '#FBBF24', limb: '#831843' }, // 粉/綠/金
+                { main: '#22D3EE', belly: '#FB7185', spot: '#FDE047', limb: '#164E63' }, // 藍/紅/黃
+                { main: '#84CC16', belly: '#D946EF', spot: '#FFFFFF', limb: '#365314' }, // 綠/紫/白
+                { main: '#FCD34D', belly: '#6366F1', spot: '#F87171', limb: '#92400E' }, // 黃/靛/紅
+                { main: '#818CF8', belly: '#FB923C', spot: '#34D399', limb: '#312E81' }  // 靛/橘/綠
+            ];
+
+            return {
+                seed: s,
+                c: vibrantColors[s % vibrantColors.length],
+                ear: (s >> 2) % 4, // 0:貓, 1:熊, 2:兔, 3:垂耳
+                tail: (s >> 4) % 3,
+                pattern: (s >> 6) % 3 // 0:大圓點, 1:斑馬條紋, 2:星星
+            };
+        };
+
+        const Monster = ({ name, laps, size = 300 }) => {
+            const { c, seed, ear, tail, pattern } = useMemo(() => getTraits(name), [name]);
+            const stage = Math.min(Math.floor(laps / 10), 6);
+            const isEgg = stage === 0;
+
+            // 進化比例計算：頭變小，身變大
+            const headR = isEgg ? 0 : 42 - (stage * 3.5); 
+            const bodyH = isEgg ? 0 : 15 + (stage * 11);
+            const bodyW = isEgg ? 0 : 38 + (stage * 5);
+
+            return (
+                <svg width={size} height={size * 1.2} viewBox="0 0 100 120" className={stage >= 6 ? "drop-shadow-[0_0_20px_gold]" : ""}>
+                    <defs>
+                        <radialGradient id={`gB-${seed}`} cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stopColor="white" stopOpacity="0.3" />
+                            <stop offset="100%" stopColor={c.main} />
+                        </radialGradient>
+                        <radialGradient id={`gS-${seed}`} cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor={c.spot} />
+                            <stop offset="100%" stopColor={c.main} stopOpacity="0" />
+                        </radialGradient>
+                    </defs>
+
+                    {/* 地面投影 */}
+                    <ellipse cx="50" cy="115" rx={20+stage*6} ry="10" fill="black" opacity="0.1" />
+
+                    <g className="monster-bounce">
+                        {isEgg ? (
+                            <g>
+                                <path d="M50 35 C30 35 24 90 50 90 C76 90 70 35 50 35 Z" fill={c.main} stroke={c.limb} strokeWidth="1.5" />
+                                {/* 蛋殼對比花紋 */}
+                                <circle cx="40" cy="65" r="6" fill={c.spot} />
+                                <circle cx="62" cy="55" r="4" fill={c.belly} />
+                                <path d="M45 45 Q50 50 55 45" fill="none" stroke={c.limb} opacity="0.4" />
+                            </g>
+                        ) : (
+                            <g>
+                                {/* 肢體 */}
+                                <g fill={c.limb}>
+                                    <rect x="30" y="100" width="16" height="15" rx="8" />
+                                    <rect x="54" y="100" width="16" height="15" rx="8" />
+                                    {stage >= 2 && <g fill={c.main} stroke={c.limb}><rect x={50-bodyW/2-10} y="75" width="12" height="25" rx="6" transform="rotate(20,35,75)" /><rect x={50+bodyW/2-2} y="75" width="12" height="25" rx="6" transform="rotate(-20,65,75)" /></g>}
+                                    {stage >= 3 && <path d="M75 105 Q100 100 92 75" fill="none" stroke={c.limb} strokeWidth="8" strokeLinecap="round" opacity="0.6" />}
+                                </g>
+
+                                {/* 軀幹與腹部 (對比色) */}
+                                <rect x={50-bodyW/2} y={110-bodyH} width={bodyW} height={bodyH} rx={bodyW/2.5} fill={c.main} stroke={c.limb} strokeWidth="1" />
+                                <ellipse cx="50" cy={110-bodyH/2} rx={bodyW/2.8} ry={bodyH/2.5} fill={c.belly} opacity="0.9" />
+
+                                {/* 頭部 */}
+                                <g transform={`translate(0, ${110-bodyH-headR*0.7})`}>
+                                    {/* 耳朵 (多色搭配) */}
+                                    <g fill={c.main} stroke={c.limb} strokeWidth="1.5">
+                                        {ear === 0 && <><path d="M25 15 L5 -10 L40 10 Z" /><path d="M75 15 L95 -10 L60 10 Z" /></>}
+                                        {ear === 1 && <><circle cx="20" cy="15" r="10" /><circle cx="80" cy="15" r="10" /></>}
+                                        {ear === 2 && <><ellipse cx="28" cy="0" rx="7" ry="22" transform="rotate(-15,28,0)" /><ellipse cx="72" cy="0" rx="7" ry="22" transform="rotate(15,72,0)" /></>}
+                                        {ear === 3 && <><rect x="10" y="15" width="12" height="30" rx="6" /><rect x="78" y="15" width="12" height="30" rx="6" /></>}
+                                    </g>
+                                    {/* 頭主體 */}
+                                    <circle cx="50" cy="30" r={headR} fill={c.main} stroke={c.limb} strokeWidth="1" />
+                                    
+                                    {/* 臉部細節 */}
+                                    <g transform="translate(0, 5)">
+                                        <circle cx="38" cy="25" r={headR/4.5} fill="white" stroke={c.limb} />
+                                        <circle cx="62" cy="25" r={headR/4.5} fill="white" stroke={c.limb} />
+                                        <circle cx="38" cy="25" r={headR/10} fill="black">
+                                            <animate attributeName="ry" values={`${headR/10};1;${headR/10}`} dur="4s" repeatCount="indefinite" />
+                                        </circle>
+                                        <circle cx="62" cy="25" r={headR/10} fill="black">
+                                            <animate attributeName="ry" values={`${headR/10};1;${headR/10}`} dur="4s" repeatCount="indefinite" />
+                                        </circle>
+                                        {/* 腮紅 */}
+                                        <circle cx="30" cy="36" r={headR/6} fill="#FF80AB" opacity="0.5" />
+                                        <circle cx="70" cy="36" r={headR/6} fill="#FF80AB" opacity="0.5" />
+                                        <path d="M46 42 Q50 48 54 42" fill="none" stroke={c.limb} strokeWidth="2.5" strokeLinecap="round" />
+                                    </g>
+
+                                    {/* 40圈+: 角 */}
+                                    {stage >= 4 && <path d="M42 5 L50 -15 L58 5 Z" fill={c.spot} stroke={c.limb} />}
+                                </g>
+
+                                {/* 究極特效 */}
+                                {stage >= 6 && <g className="animate-pulse" stroke={c.spot} strokeWidth="3" fill="none"><circle cx="50" cy="50" r="60" strokeDasharray="10 15" /><path d="M10 40 Q-20 10 20 -10 M90 40 Q120 10 80 -10" /></g>}
+                            </g>
+                        )}
+                    </g>
+                </svg>
+            );
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [laps, setLaps] = useState(0);
+            const [confirmReset, setConfirmReset] = useState(false);
+
+            useEffect(() => {
+                const saved = localStorage.getItem('animal_evo_v10_user');
+                if (saved) {
+                    setUser(saved);
+                    setLaps(parseInt(localStorage.getItem(`laps_v10_${saved}`) || "0"));
+                }
+            }, []);
+
+            const login = (name) => {
+                setUser(name);
+                const val = parseInt(localStorage.getItem(`laps_v10_${name}`) || "0");
+                setLaps(val);
+                localStorage.setItem('animal_evo_v10_user', name);
+            };
+
+            const logout = () => { setUser(null); localStorage.removeItem('animal_evo_v10_user'); };
+
+            const addLap = () => {
+                const nl = laps + 1;
+                setLaps(nl);
+                localStorage.setItem(`laps_v10_${user}`, nl);
+            };
+
+            const minusLap = () => {
+                if (laps > 0) {
+                    const nl = laps - 1;
+                    setLaps(nl);
+                    localStorage.setItem(`laps_v10_${user}`, nl);
+                }
+                setConfirmReset(false);
+            };
+
+            if (!user) {
+                return (
+                    <div className="min-h-screen p-6 flex flex-col items-center animate-in fade-in duration-1000">
+                        <header className="text-center mb-12">
+                            <h1 className="text-6xl font-black text-indigo-600 mb-4 tracking-tighter italic">繽紛萌寵進化賽 🐾</h1>
+                            <p className="text-slate-400 text-xl font-bold tracking-widest uppercase">Select Your Hero</p>
+                        </header>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-6 w-full max-w-6xl">
+                            {NAMES.map(n => (
+                                <button key={n} onClick={() => login(n)} className="bg-white p-6 rounded-[3rem] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all border-4 border-transparent hover:border-indigo-400 font-black text-xl text-slate-700">
+                                    {n}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            const currentStage = Math.min(Math.floor(laps / 10), 6);
+            const stageLabels = ["神祕繽紛蛋", "大頭幼獸期", "活潑成長期", "陽光青年期", "強壯守護者", "傳奇幻獸期", "究極神獸覺醒"];
+
+            return (
+                <div className="min-h-screen p-4 flex flex-col items-center justify-center animate-in zoom-in duration-500">
+                    <div className="w-full max-w-3xl bg-white rounded-[5rem] shadow-2xl p-12 text-center border-8 border-white relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-4 bg-gradient-to-r from-orange-400 via-pink-500 to-indigo-600"></div>
+                        
+                        <div className="flex justify-between items-center mb-10">
+                            <div className="bg-indigo-600 text-white px-8 py-2 rounded-full font-black text-xl shadow-lg italic">
+                                Lv.{currentStage} {stageLabels[currentStage]}
+                            </div>
+                            <button onClick={logout} className="text-slate-300 font-bold underline text-lg">切換玩家</button>
+                        </div>
+
+                        <h2 className="text-9xl font-black text-slate-800 mb-8 tracking-tighter leading-none">{user}</h2>
+                        
+                        <div className="bg-slate-50 rounded-[6rem] h-[500px] flex items-center justify-center mb-12 shadow-inner border-4 border-white">
+                            <Monster name={user} laps={laps} size={450} />
+                        </div>
+
+                        <div className="mb-16">
+                            <div className="text-[140px] font-black text-indigo-600 leading-none mb-2 italic">{laps} <span className="text-3xl text-slate-300 font-bold not-italic">LAPS</span></div>
+                        </div>
+
+                        <div className="space-y-8">
+                            <button onClick={addLap} className="bg-slate-900 text-white w-full py-16 rounded-[4rem] text-9xl shadow-[0_30px_0_#000] active:translate-y-4 active:shadow-none transition-all flex flex-col items-center group btn-active">
+                                <span className="group-active:scale-90 transition-transform mb-6">🐾</span>
+                                <span className="text-5xl font-black italic tracking-widest uppercase">完成一圈</span>
+                            </button>
+
+                            {/* 修正功能 */}
+                            <div className="pt-4">
+                                {!confirmReset ? (
+                                    <button onClick={() => setConfirmReset(true)} className="text-slate-300 hover:text-red-400 font-black text-lg transition-colors underline decoration-dotted">按錯了？扣除一圈</button>
+                                ) : (
+                                    <div className="bg-red-50 p-6 rounded-[3rem] border-4 border-red-100 flex items-center justify-between animate-in slide-in-from-bottom-4">
+                                        <span className="text-red-500 font-black text-xl italic">確定要減少一圈嗎？</span>
+                                        <div className="flex gap-4">
+                                            <button onClick={minusLap} className="bg-red-500 text-white px-10 py-3 rounded-[2rem] font-black shadow-md">是的</button>
+                                            <button onClick={() => setConfirmReset(false)} className="bg-white text-slate-400 px-10 py-3 rounded-[2rem] font-black shadow-sm border border-slate-100">取消</button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <p className="mt-16 text-slate-300 font-black text-2xl italic tracking-tighter uppercase opacity-30">Evolution Journey // Class of 28 // 2026</p>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
